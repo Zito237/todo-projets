@@ -57,4 +57,27 @@ export class TodoService {
   async listerTaches(projetId) {
     return this.depot.listerTaches(projetId);
   }
+
+  async modifierTache(id, changements = {}) {
+    const tache = await this.depot.trouverTache(id);
+    if (!tache) {
+      throw new ErreurValidation('Tâche introuvable', 'tache');
+    }
+    const modifiee = { ...tache };
+    if ('titre' in changements) {
+      modifiee.titre = validerTitreTache(changements.titre);
+    }
+    if ('echeance' in changements) {
+      modifiee.echeance = validerEcheance(changements.echeance);
+    }
+    if ('projetId' in changements) {
+      if (!(await this.depot.trouverProjet(changements.projetId))) {
+        throw new ErreurValidation('Projet introuvable', 'projet');
+      }
+      modifiee.projetId = changements.projetId;
+    }
+    modifiee.modifieLe = this.#maintenant();
+    await this.depot.sauverTache(modifiee);
+    return modifiee;
+  }
 }

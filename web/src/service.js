@@ -68,8 +68,10 @@ export class TodoService {
     return tache;
   }
 
+  /** Tâches du projet : à faire d'abord, terminées ensuite ; à statut égal, par date de création. */
   async listerTaches(projetId) {
-    return this.depot.listerTaches(projetId);
+    const taches = await this.depot.listerTaches(projetId);
+    return taches.sort((a, b) => Number(a.terminee) - Number(b.terminee) || a.creeLe.localeCompare(b.creeLe));
   }
 
   async modifierTache(id, changements = {}) {
@@ -86,6 +88,13 @@ export class TodoService {
       modifiee.projetId = changements.projetId;
     }
     modifiee.modifieLe = this.#maintenant();
+    await this.depot.sauverTache(modifiee);
+    return modifiee;
+  }
+
+  async basculerTerminee(id) {
+    const tache = await this.#exigerTache(id);
+    const modifiee = { ...tache, terminee: !tache.terminee, modifieLe: this.#maintenant() };
     await this.depot.sauverTache(modifiee);
     return modifiee;
   }

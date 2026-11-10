@@ -20,6 +20,22 @@ export class TodoService {
     return this.horloge().toISOString();
   }
 
+  async #exigerProjet(id) {
+    const projet = await this.depot.trouverProjet(id);
+    if (!projet) {
+      throw new ErreurValidation('Projet introuvable', 'projet');
+    }
+    return projet;
+  }
+
+  async #exigerTache(id) {
+    const tache = await this.depot.trouverTache(id);
+    if (!tache) {
+      throw new ErreurValidation('Tâche introuvable', 'tache');
+    }
+    return tache;
+  }
+
   async ajouterProjet(nomSaisi) {
     const nom = validerNomProjet(nomSaisi);
     const existants = await this.depot.listerProjets();
@@ -37,9 +53,7 @@ export class TodoService {
   }
 
   async ajouterTache(projetId, { titre, echeance } = {}) {
-    if (!(await this.depot.trouverProjet(projetId))) {
-      throw new ErreurValidation('Projet introuvable', 'projet');
-    }
+    await this.#exigerProjet(projetId);
     const maintenant = this.#maintenant();
     const tache = {
       id: this.genererId(),
@@ -59,10 +73,7 @@ export class TodoService {
   }
 
   async modifierTache(id, changements = {}) {
-    const tache = await this.depot.trouverTache(id);
-    if (!tache) {
-      throw new ErreurValidation('Tâche introuvable', 'tache');
-    }
+    const tache = await this.#exigerTache(id);
     const modifiee = { ...tache };
     if ('titre' in changements) {
       modifiee.titre = validerTitreTache(changements.titre);
@@ -71,9 +82,7 @@ export class TodoService {
       modifiee.echeance = validerEcheance(changements.echeance);
     }
     if ('projetId' in changements) {
-      if (!(await this.depot.trouverProjet(changements.projetId))) {
-        throw new ErreurValidation('Projet introuvable', 'projet');
-      }
+      await this.#exigerProjet(changements.projetId);
       modifiee.projetId = changements.projetId;
     }
     modifiee.modifieLe = this.#maintenant();

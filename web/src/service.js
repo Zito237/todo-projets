@@ -1,4 +1,6 @@
-import { ErreurValidation, cleDeNom, comparerNoms, validerNomProjet } from './regles.js';
+import {
+  ErreurValidation, cleDeNom, comparerNoms, validerNomProjet, validerTitreTache, validerEcheance,
+} from './regles.js';
 
 export { ErreurValidation };
 
@@ -32,5 +34,27 @@ export class TodoService {
   async listerProjets() {
     const projets = await this.depot.listerProjets();
     return projets.sort((a, b) => comparerNoms(a.nom, b.nom));
+  }
+
+  async ajouterTache(projetId, { titre, echeance } = {}) {
+    if (!(await this.depot.trouverProjet(projetId))) {
+      throw new ErreurValidation('Projet introuvable', 'projet');
+    }
+    const maintenant = this.#maintenant();
+    const tache = {
+      id: this.genererId(),
+      projetId,
+      titre: validerTitreTache(titre),
+      echeance: validerEcheance(echeance),
+      terminee: false,
+      creeLe: maintenant,
+      modifieLe: maintenant,
+    };
+    await this.depot.sauverTache(tache);
+    return tache;
+  }
+
+  async listerTaches(projetId) {
+    return this.depot.listerTaches(projetId);
   }
 }

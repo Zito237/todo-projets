@@ -25,6 +25,7 @@ const ui = {
 let service;
 let projetCourantId = null;
 let tacheEnEditionId = null;
+let nbRendus = 0;
 
 /** « 2027-06-30 » -> « 30/06/2027 », sans passer par Date (pas de piège de fuseau horaire). */
 function dateFr(iso) {
@@ -67,6 +68,9 @@ async function afficher() {
   }
   await afficherProjets(projets);
   await afficherTaches(projets.find((p) => p.id === projetCourantId));
+  // Repère pour les tests BDD : incrémenté à la fin de chaque rendu. Le test attend
+  // qu'il change au lieu de faire Thread.sleep (attente sur condition, séance 9).
+  document.body.dataset.rendu = String(++nbRendus);
 }
 
 async function afficherProjets(projets) {

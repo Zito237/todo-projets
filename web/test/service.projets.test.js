@@ -18,7 +18,28 @@ describe('Projets', () => {
     expect(await service.listerProjets()).toEqual([projet]);
   });
 
-  it('refuse un projet sans nom', async () => {
-    await expect(service.ajouterProjet('')).rejects.toThrow(ErreurValidation);
+  it.each([
+    ['vide', ''],
+    ['uniquement des espaces', '   '],
+  ])('refuse un projet au nom %s', async (_cas, nom) => {
+    await expect(service.ajouterProjet(nom)).rejects.toThrow(ErreurValidation);
+  });
+
+  it('retire les espaces autour du nom', async () => {
+    const projet = await service.ajouterProjet('  Cours INF563  ');
+    expect(projet.nom).toBe('Cours INF563');
+  });
+
+  it('refuse deux projets du même nom, sans tenir compte de la casse ni des espaces', async () => {
+    await service.ajouterProjet('Maison');
+    await expect(service.ajouterProjet(' maison ')).rejects.toThrow('Un projet porte déjà ce nom');
+  });
+
+  it('liste les projets par ordre alphabétique', async () => {
+    await service.ajouterProjet('Travail');
+    await service.ajouterProjet('école');
+    await service.ajouterProjet('Maison');
+    const noms = (await service.listerProjets()).map((p) => p.nom);
+    expect(noms).toEqual(['école', 'Maison', 'Travail']);
   });
 });

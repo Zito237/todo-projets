@@ -7,9 +7,14 @@ export class TodoService {
     this.genererId = genererId;
   }
 
-  async ajouterProjet(nom) {
+  async ajouterProjet(nomSaisi) {
+    const nom = (nomSaisi ?? '').trim();
     if (!nom) {
       throw new ErreurValidation('Le nom du projet est obligatoire');
+    }
+    const existants = await this.depot.listerProjets();
+    if (existants.some((p) => p.nom.toLowerCase() === nom.toLowerCase())) {
+      throw new ErreurValidation('Un projet porte déjà ce nom');
     }
     const projet = { id: this.genererId(), nom, creeLe: this.horloge().toISOString() };
     await this.depot.sauverProjet(projet);
@@ -17,6 +22,7 @@ export class TodoService {
   }
 
   async listerProjets() {
-    return this.depot.listerProjets();
+    const projets = await this.depot.listerProjets();
+    return projets.sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }));
   }
 }

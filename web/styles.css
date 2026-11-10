@@ -1,0 +1,65 @@
+:root {
+  --fond: #f6f7f9;
+  --carte: #ffffff;
+  --texte: #1d2330;
+  --discret: #667085;
+  --bord: #dde1e8;
+  --accent: #1f6feb;
+  --accent-fonce: #1858bd;
+  --erreur: #b42318;
+  --erreur-fond: #fef3f2;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--texte);
+  background: var(--fond);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+h1, h2 { margin: 0; }
+
+.entete { padding: 20px 28px; background: var(--carte); border-bottom: 1px solid var(--bord); }
+.entete h1 { font-size: 1.35rem; }
+.sous-titre { margin: 4px 0 0; color: var(--discret); font-size: .9rem; }
+
+.mise-en-page { display: grid; grid-template-columns: 280px 1fr; gap: 24px; padding: 24px 28px; max-width: 1100px; }
+@media (max-width: 720px) { .mise-en-page { grid-template-columns: 1fr; } }
+
+.projets, .taches { background: var(--carte); border: 1px solid var(--bord); border-radius: 10px; padding: 18px; }
+.projets h2, .taches h2 { font-size: 1.05rem; }
+
+#liste-projets { list-style: none; margin: 12px 0; padding: 0; }
+#liste-projets button {
+  width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px;
+  border-radius: 6px; cursor: pointer; font: inherit; color: inherit; display: flex; justify-content: space-between;
+}
+#liste-projets button:hover { background: var(--fond); }
+#liste-projets button[aria-current="true"] { background: #e8f0fe; color: var(--accent-fonce); font-weight: 600; }
+.nb { color: var(--discret); font-weight: 400; font-size: .85rem; }
+
+input { font: inherit; padding: 8px 10px; border: 1px solid var(--bord); border-radius: 6px; min-width: 0; }
+input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+button { font: inherit; cursor: pointer; }
+button[type="submit"], .principal {
+  background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px;
+}
+button[type="submit"]:hover, .principal:hover { background: var(--accent-fonce); }
+.secondaire { background: none; border: 1px solid var(--bord); border-radius: 6px; padding: 6px 10px; color: var(--texte); }
+
+.form-ligne { display: flex; gap: 8px; }
+.form-ligne input { flex: 1; }
+.form-tache { display: grid; grid-template-columns: 1fr 160px auto; gap: 8px; margin: 16px 0; }
+
+.titre-projet { display: flex; align-items: baseline; gap: 12px; }
+.compteur, .discret { color: var(--discret); font-size: .9rem; }
+
+.liste-taches { list-style: none; margin: 0; padding: 0; }
+.liste-taches li { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-top: 1px solid var(--bord); }
+.liste-taches li .titre { flex: 1; }
+.liste-taches li.terminee .titre { text-decoration: line-through; color: var(--discret); }
+.liste-taches .echeance { color: var(--discret); font-size: .85rem; white-space: nowrap; }
+.liste-taches input[type="checkbox"] { width: 18px; height: 18px; }
+.liste-taches form { display: grid; grid-template-columns: 1fr 160px auto auto; gap: 8px; width: 100%; }
+
+.erreur { background: var(--erreur-fond); color: var(--erreur); border: 1px solid #fecdca; border-radius: 6px; padding: 8px 12px; margin: 0 0 12px; }
+
+.visuellement-cache { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

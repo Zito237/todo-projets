@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>To-Do par projets</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="entete">
+    <h1>To-Do par projets</h1>
+    <p class="sous-titre">Vos données restent dans ce navigateur (IndexedDB).</p>
+  </header>
+
+  <div class="mise-en-page">
+    <aside class="projets" aria-labelledby="titre-projets">
+      <h2 id="titre-projets">Projets</h2>
+      <ul id="liste-projets" data-testid="liste-projets"></ul>
+      <form id="form-projet" class="form-ligne" novalidate>
+        <label class="visuellement-cache" for="nom-projet">Nom du nouveau projet</label>
+        <input id="nom-projet" data-testid="nom-projet" placeholder="Nouveau projet" autocomplete="off">
+        <button type="submit" data-testid="ajouter-projet">Créer</button>
+      </form>
+    </aside>
+
+    <main class="taches" aria-live="polite">
+      <p id="erreur" data-testid="erreur" class="erreur" role="alert" hidden></p>
+
+      <section id="vue-vide" data-testid="vue-vide">
+        <h2>Aucun projet</h2>
+        <p>Créez un premier projet pour y ajouter des tâches.</p>
+      </section>
+
+      <section id="vue-projet" hidden>
+        <div class="titre-projet">
+          <h2 id="projet-courant" data-testid="projet-courant"></h2>
+          <span id="compteur" data-testid="compteur" class="compteur"></span>
+        </div>
+
+        <form id="form-tache" class="form-tache" novalidate>
+          <label class="visuellement-cache" for="titre-tache">Titre de la tâche</label>
+          <input id="titre-tache" data-testid="titre-tache" placeholder="Que faut-il faire ?" autocomplete="off">
+          <label class="visuellement-cache" for="echeance-tache">Échéance</label>
+          <input id="echeance-tache" data-testid="echeance-tache" type="date">
+          <button type="submit" data-testid="ajouter-tache">Ajouter</button>
+        </form>
+
+        <ul id="liste-taches" data-testid="liste-taches" class="liste-taches"></ul>
+        <p id="aucune-tache" data-testid="aucune-tache" class="discret" hidden>Aucune tâche dans ce projet.</p>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

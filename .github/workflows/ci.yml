@@ -1,0 +1,65 @@
+# Intégration continue (cours INF563, séance 9) : à chaque push et à chaque pull
+# request, GitHub rejoue TOUTE la suite de tests (non-régression).
+# Ordre de la pyramide : les tests les plus rapides d'abord, pour échouer au plus tôt.
+name: CI - tests TDD et BDD
+
+on:
+  push:            # n'importe quelle branche
+  pull_request:    # avant toute fusion
+  workflow_dispatch: # bouton « Run workflow » dans l'onglet Actions
+
+jobs:
+  tdd:
+    name: Tests unitaires et d'intégration (TDD, Vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances (versions figées par package-lock.json)
+        run: npm ci
+
+      - name: Lancer les tests avec la couverture
+        run: npm run test:couverture
+
+      - name: Publier le rapport de couverture
+        if: always()   # surtout quand les tests échouent : c'est là qu'on a besoin du rapport
+        uses: actions/upload-artifact@v4
+        with:
+          name: couverture-vitest
+          path: coverage/
+
+  bdd:
+    name: Scénarios BDD (Cucumber + Selenium, mvn verify)
+    needs: tdd       # inutile de lancer les tests lents si les tests rapides sont rouges
+    runs-on: ubuntu-latest   # Google Chrome est préinstallé sur cette machine
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: bdd
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Exécuter les scénarios (Failsafe n'échoue qu'en phase verify)
+        run: mvn -B verify
+
+      - name: Publier les rapports Cucumber et Failsafe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-bdd
+          path: |
+            bdd/target/cucumber-rapport.html
+            bdd/target/cucumber.json
+            bdd/target/failsafe-reports/

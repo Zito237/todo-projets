@@ -36,7 +36,7 @@ h1, h2 { margin: 0; }
 #liste-projets button[aria-current="true"] { background: #e8f0fe; color: var(--accent-fonce); font-weight: 600; }
 .nb { color: var(--discret); font-weight: 400; font-size: .85rem; }
 
-input, select { font: inherit; padding: 8px 10px; border: 1px solid var(--bord); border-radius: 6px; min-width: 0; }
+input, select { font: inherit; background: #fff; padding: 8px 10px; border: 1px solid var(--bord); border-radius: 6px; min-width: 0; }
 input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 button { font: inherit; cursor: pointer; }
 button[type="submit"], .principal {

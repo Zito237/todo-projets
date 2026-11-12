@@ -34,6 +34,7 @@ describe(`ajouter une tâche : ${CAS.length} cas pairwise (au lieu de ${taillePr
     // Assert
     if (attendu.erreur) {
       expect(erreur, 'refus attendu').toBeInstanceOf(ErreurValidation);   // oracle implicite
+      expect(erreur.name).toBe('ErreurValidation');
       expect(erreur.message).not.toBe('');
       expect(erreur.champ).toBe(attendu.erreur);                           // oracle de référence
       expect(await etat(service)).toEqual(avant);                          // aucune écriture

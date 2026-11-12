@@ -31,6 +31,12 @@ export const ECHEANCES = [
   { id: 'E7', libelle: '31 avril (jour inexistant)', valeur: '2027-04-31', valide: false },
   { id: 'E8', libelle: 'format français JJ/MM/AAAA', valeur: '30/06/2027', valide: false },
   { id: 'E9', libelle: 'mois 13', valeur: '2027-13-01', valide: false },
+  // Classes ajoutées après le test de mutation : Stryker a montré qu'on pouvait retirer
+  // les ancres ^ et $ de l'expression régulière, ou le contrôle de l'année, sans
+  // qu'aucun test n'échoue. Il manquait ces trois classes.
+  { id: 'E10', libelle: 'date suivie d’une heure', valeur: '2027-06-30T12:00', valide: false },
+  { id: 'E11', libelle: 'texte avant la date', valeur: 'le 2027-06-30', valide: false },
+  { id: 'E12', libelle: 'année 0050 (Date.UTC la lirait 1950)', valeur: '0050-01-01', valide: false },
 ];
 
 // ----- Projet visé -----
@@ -47,7 +53,7 @@ export const CONTENUS = [
   { id: 'C4', libelle: 'doublon du titre ordinaire', taches: [{ titre: 'Rédiger le chapitre 2', terminee: false }] },
 ];
 
-/** Facteurs du pairwise d'AJOUT d'une tâche : 8 × 9 × 2 × 4 = 576 combinaisons au total. */
+/** Facteurs du pairwise d'AJOUT d'une tâche : 8 × 12 × 2 × 4 = 768 combinaisons au total. */
 export const FACTEURS_AJOUT = { titre: TITRES, echeance: ECHEANCES, projet: PROJETS, contenu: CONTENUS };
 
 // ----- Modification d'une tâche -----

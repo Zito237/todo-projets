@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "INF563 - Application To-Do par projets (IndexedDB), TDD + BDD + CI",
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",

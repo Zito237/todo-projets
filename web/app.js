@@ -15,6 +15,7 @@ const ui = {
   vueProjet: $('#vue-projet'),
   projetCourant: $('#projet-courant'),
   compteur: $('#compteur'),
+  progression: $('#progression'),
   formTache: $('#form-tache'),
   titreTache: $('#titre-tache'),
   echeanceTache: $('#echeance-tache'),
@@ -69,7 +70,7 @@ async function afficher() {
   await afficherProjets(projets);
   await afficherTaches(projets.find((p) => p.id === projetCourantId));
   // Repère pour les tests BDD : incrémenté à la fin de chaque rendu. Le test attend
-  // qu'il change au lieu de faire Thread.sleep (attente sur condition, séance 9).
+  // qu'il change au lieu de faire une pause fixe (attente sur condition, séance 9).
   document.body.dataset.rendu = String(++nbRendus);
 }
 
@@ -106,11 +107,13 @@ async function afficherTaches(projet) {
     return;
   }
   const taches = await service.listerTaches(projet.id);
-  const aFaire = taches.filter((t) => !t.terminee).length;
+  const stats = await service.statistiques(projet.id);
+  const projets = await service.listerProjets();
   ui.projetCourant.textContent = projet.nom;
-  ui.compteur.textContent = `${aFaire} à faire sur ${taches.length}`;
+  ui.compteur.textContent = `${stats.aFaire} à faire sur ${stats.total}`;
+  ui.progression.textContent = `${stats.progression} % terminé`;
   ui.aucuneTache.hidden = taches.length > 0;
-  ui.listeTaches.replaceChildren(...taches.map((t) => (t.id === tacheEnEditionId ? ligneEdition(t) : ligneTache(t))));
+  ui.listeTaches.replaceChildren(...taches.map((t) => (t.id === tacheEnEditionId ? ligneEdition(t, projets) : ligneTache(t))));
 }
 
 function ligneTache(tache) {
@@ -151,7 +154,7 @@ function ligneTache(tache) {
   return li;
 }
 
-function ligneEdition(tache) {
+function ligneEdition(tache, projets) {
   const li = document.createElement('li');
   li.dataset.testid = 'tache';
   li.dataset.id = tache.id;
@@ -167,6 +170,14 @@ function ligneEdition(tache) {
   echeance.value = tache.echeance ?? '';
   echeance.dataset.testid = 'edition-echeance';
   echeance.setAttribute('aria-label', 'Nouvelle échéance');
+  // Modifier une tâche permet aussi de la déplacer dans un autre projet
+  const projet = document.createElement('select');
+  projet.dataset.testid = 'edition-projet';
+  projet.setAttribute('aria-label', 'Projet de la tâche');
+  for (const p of projets) {
+    const option = new Option(p.nom, p.id, false, p.id === tache.projetId);
+    projet.append(option);
+  }
   const enregistrer = document.createElement('button');
   enregistrer.type = 'submit';
   enregistrer.dataset.testid = 'enregistrer';
@@ -180,7 +191,7 @@ function ligneEdition(tache) {
   form.addEventListener('submit', (evt) => {
     evt.preventDefault();
     agir(async () => {
-      await service.modifierTache(tache.id, { titre: titre.value, echeance: echeance.value || null });
+      await service.modifierTache(tache.id, { titre: titre.value, echeance: echeance.value || null, projetId: projet.value });
       tacheEnEditionId = null; // on ne quitte l'édition que si l'enregistrement a réussi
     });
   });
@@ -190,7 +201,7 @@ function ligneEdition(tache) {
     afficher();
   });
 
-  form.append(titre, echeance, enregistrer, annuler);
+  form.append(titre, echeance, projet, enregistrer, annuler);
   li.append(form);
   queueMicrotask(() => titre.focus());
   return li;

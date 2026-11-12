@@ -94,6 +94,16 @@ Fonctionnalité: Gérer mes tâches par projet
       | Rédiger le chapitre 3 |
     Et la tâche "Rédiger le chapitre 3" a l'échéance "15/07/2027"
 
+  @modification @projet
+  Scénario: Déplacer une tâche vers un autre projet
+    Soit le projet "Maison" existe
+    Et le projet "Mémoire Master 2" existe
+    Et la tâche "Imprimer le mémoire" existe dans ce projet
+    Quand je déplace la tâche "Imprimer le mémoire" vers le projet "Maison"
+    Alors le projet "Mémoire Master 2" ne contient aucune tâche
+    Et le projet "Maison" contient les tâches :
+      | Imprimer le mémoire |
+
   @modification
   Scénario: Annuler une modification
     Soit le projet "Maison" existe
@@ -125,6 +135,23 @@ Fonctionnalité: Gérer mes tâches par projet
       | Réviser la séance 10 |
       | Devoir BDD           |
 
+  # ---------- Progression d'un projet ----------
+
+  # Mêmes règles que l'oracle de référence des tests unitaires (arrondi à l'entier)
+  @progression
+  Plan du scénario: Progression d'un projet selon les tâches terminées
+    Soit le projet "Cours INF563" existe
+    Et le projet "Cours INF563" contient <total> tâches dont <terminees> terminées
+    Alors le compteur indique "<compteur>"
+    Et la progression indique "<progression>"
+
+    Exemples:
+      | total | terminees | compteur        | progression  |
+      | 1     | 0         | 1 à faire sur 1 | 0 % terminé   |
+      | 3     | 1         | 2 à faire sur 3 | 33 % terminé  |
+      | 3     | 2         | 1 à faire sur 3 | 67 % terminé  |
+      | 2     | 2         | 0 à faire sur 2 | 100 % terminé |
+
   # ---------- Persistance IndexedDB ----------
 
   @persistance
@@ -140,3 +167,18 @@ Fonctionnalité: Gérer mes tâches par projet
     Et le projet "Mémoire Master 2" contient les tâches :
       | Rédiger le chapitre 2 |
     Et la tâche "Rédiger le chapitre 2" est terminée
+
+  @persistance @modification
+  Scénario: Une modification et un déplacement survivent à la fermeture de l'onglet
+    Soit le projet "Maison" existe
+    Et le projet "Mémoire Master 2" existe
+    Et la tâche "Rédiger le chapitre 2" existe dans ce projet
+    Et la tâche "Imprimer le mémoire" existe dans ce projet
+    Et je modifie la tâche "Rédiger le chapitre 2" en "Rédiger le chapitre 3" avec l'échéance "2027-07-15"
+    Et je déplace la tâche "Imprimer le mémoire" vers le projet "Maison"
+    Quand je ferme l'onglet et rouvre l'application
+    Alors le projet "Mémoire Master 2" contient les tâches :
+      | Rédiger le chapitre 3 |
+    Et la tâche "Rédiger le chapitre 3" a l'échéance "15/07/2027"
+    Et le projet "Maison" contient les tâches :
+      | Imprimer le mémoire |

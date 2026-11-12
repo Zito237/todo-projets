@@ -36,8 +36,8 @@ h1, h2 { margin: 0; }
 #liste-projets button[aria-current="true"] { background: #e8f0fe; color: var(--accent-fonce); font-weight: 600; }
 .nb { color: var(--discret); font-weight: 400; font-size: .85rem; }
 
-input { font: inherit; padding: 8px 10px; border: 1px solid var(--bord); border-radius: 6px; min-width: 0; }
-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+input, select { font: inherit; padding: 8px 10px; border: 1px solid var(--bord); border-radius: 6px; min-width: 0; }
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 button { font: inherit; cursor: pointer; }
 button[type="submit"], .principal {
   background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px;
@@ -58,7 +58,7 @@ button[type="submit"]:hover, .principal:hover { background: var(--accent-fonce);
 .liste-taches li.terminee .titre { text-decoration: line-through; color: var(--discret); }
 .liste-taches .echeance { color: var(--discret); font-size: .85rem; white-space: nowrap; }
 .liste-taches input[type="checkbox"] { width: 18px; height: 18px; }
-.liste-taches form { display: grid; grid-template-columns: 1fr 160px auto auto; gap: 8px; width: 100%; }
+.liste-taches form { display: grid; grid-template-columns: 1fr 150px 150px auto auto; gap: 8px; width: 100%; }
 
 .erreur { background: var(--erreur-fond); color: var(--erreur); border: 1px solid #fecdca; border-radius: 6px; padding: 8px 12px; margin: 0 0 12px; }
 

@@ -92,6 +92,20 @@ export class TodoService {
     return modifiee;
   }
 
+  /** Compteurs d'un projet ; progression = part des tâches terminées, en % arrondi (0 si aucune tâche). */
+  async statistiques(projetId) {
+    await this.#exigerProjet(projetId);
+    const taches = await this.depot.listerTaches(projetId);
+    const total = taches.length;
+    const terminees = taches.filter((t) => t.terminee).length;
+    return {
+      total,
+      aFaire: total - terminees,
+      terminees,
+      progression: total === 0 ? 0 : Math.round((100 * terminees) / total),
+    };
+  }
+
   async basculerTerminee(id) {
     const tache = await this.#exigerTache(id);
     const modifiee = { ...tache, terminee: !tache.terminee, modifieLe: this.#maintenant() };

@@ -49,7 +49,9 @@ button[type="submit"]:hover, .principal:hover { background: var(--accent-fonce);
 .form-ligne input { flex: 1; }
 .form-tache { display: grid; grid-template-columns: 1fr 160px auto; gap: 8px; margin: 16px 0; }
 
-.titre-projet { display: flex; align-items: baseline; gap: 12px; }
+.titre-projet { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.danger { margin-left: auto; color: #b3261e; border-color: #e3b5b1; font-size: .9rem; }
+.danger:hover { background: #fdecea; }
 .compteur, .discret { color: var(--discret); font-size: .9rem; }
 
 .liste-taches { list-style: none; margin: 0; padding: 0; }

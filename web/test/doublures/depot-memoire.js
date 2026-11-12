@@ -9,6 +9,14 @@ export class DepotMemoire {
   async trouverProjet(id) { const p = this.#projets.get(id); return p ? { ...p } : null; }
   async listerProjets() { return [...this.#projets.values()].map((p) => ({ ...p })); }
 
+  /** Supprime le projet ET ses tâches (aucune tâche orpheline) ; sans effet si l'id est inconnu. */
+  async supprimerProjet(id) {
+    this.#projets.delete(id);
+    for (const [idTache, tache] of this.#taches) {
+      if (tache.projetId === id) this.#taches.delete(idTache);
+    }
+  }
+
   async sauverTache(tache) { this.#taches.set(tache.id, { ...tache }); }
   async trouverTache(id) { const t = this.#taches.get(id); return t ? { ...t } : null; }
   async listerTaches(projetId) {

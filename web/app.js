@@ -16,6 +16,7 @@ const ui = {
   projetCourant: $('#projet-courant'),
   compteur: $('#compteur'),
   progression: $('#progression'),
+  supprimerProjet: $('#supprimer-projet'),
   formTache: $('#form-tache'),
   titreTache: $('#titre-tache'),
   echeanceTache: $('#echeance-tache'),
@@ -215,6 +216,20 @@ ui.formProjet.addEventListener('submit', (evt) => {
     const projet = await service.ajouterProjet(ui.nomProjet.value);
     projetCourantId = projet.id;
     ui.nomProjet.value = '';
+  });
+});
+
+ui.supprimerProjet.addEventListener('click', async () => {
+  const id = projetCourantId;
+  const { total } = await service.statistiques(id);
+  const quoi = total === 0 ? '' : total === 1 ? ' et sa tâche' : ` et ses ${total} tâches`;
+  // Action irréversible : on demande confirmation en annonçant ce qui sera perdu
+  if (!window.confirm(`Supprimer le projet « ${ui.projetCourant.textContent} »${quoi} ?`)) {
+    return;
+  }
+  agir(async () => {
+    await service.supprimerProjet(id);
+    tacheEnEditionId = null;
   });
 });
 

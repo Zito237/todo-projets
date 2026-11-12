@@ -182,3 +182,60 @@ Fonctionnalité: Gérer mes tâches par projet
     Et la tâche "Rédiger le chapitre 3" a l'échéance "15/07/2027"
     Et le projet "Maison" contient les tâches :
       | Imprimer le mémoire |
+
+  # ---------- Supprimer un projet ----------
+
+  # Règle : supprimer un projet supprime aussi ses tâches, après confirmation
+  @suppression @projet
+  Scénario: Supprimer un projet et ses tâches
+    Soit le projet "Maison" existe
+    Et la tâche "Arroser les plantes" existe dans ce projet
+    Et le projet "Mémoire Master 2" existe
+    Et la tâche "Rédiger le chapitre 2" existe dans ce projet
+    Quand je supprime le projet "Maison" en confirmant
+    Alors la liste des projets est :
+      | Mémoire Master 2 |
+    Et le projet "Mémoire Master 2" contient les tâches :
+      | Rédiger le chapitre 2 |
+
+  @suppression @projet
+  Scénario: La confirmation annonce le nombre de tâches qui seront supprimées
+    Soit le projet "Maison" existe
+    Et la tâche "Arroser les plantes" existe dans ce projet
+    Et la tâche "Ranger le garage" existe dans ce projet
+    Quand je supprime le projet "Maison" en confirmant
+    Alors la confirmation demandée était "Supprimer le projet « Maison » et ses 2 tâches ?"
+
+  @suppression @projet
+  Scénario: Supprimer le dernier projet ramène à l'écran vide
+    Soit le projet "Maison" existe
+    Quand je supprime le projet "Maison" en confirmant
+    Alors l'application indique qu'il n'y a aucun projet
+
+  @suppression @negatif
+  Scénario: Renoncer à la suppression ne change rien
+    Soit le projet "Maison" existe
+    Et la tâche "Arroser les plantes" existe dans ce projet
+    Quand je supprime le projet "Maison" en refusant la confirmation
+    Alors la liste des projets est :
+      | Maison |
+    Et le projet "Maison" contient les tâches :
+      | Arroser les plantes |
+
+  @suppression @projet
+  Scénario: Recréer un projet supprimé donne un projet vide
+    Soit le projet "Maison" existe
+    Et la tâche "Arroser les plantes" existe dans ce projet
+    Et je supprime le projet "Maison" en confirmant
+    Quand je crée le projet "Maison"
+    Alors le projet "Maison" ne contient aucune tâche
+
+  @suppression @persistance
+  Scénario: Un projet supprimé ne revient pas après rechargement de la page
+    Soit le projet "Maison" existe
+    Et la tâche "Arroser les plantes" existe dans ce projet
+    Et le projet "Mémoire Master 2" existe
+    Et je supprime le projet "Maison" en confirmant
+    Quand je recharge la page
+    Alors la liste des projets est :
+      | Mémoire Master 2 |

@@ -11,6 +11,7 @@ référence, réflexif, par homothétie, métamorphiques et différentiel.
 - Créer des projets : nom obligatoire, unique sans tenir compte de la casse, liste triée.
 - Ajouter une tâche dans un projet : titre obligatoire (120 caractères au plus), échéance facultative.
 - Modifier une tâche : titre, échéance, **projet** (déplacer la tâche) ; annuler une modification.
+- Supprimer un projet : ses tâches sont supprimées avec lui, après confirmation.
 - Cocher une tâche terminée : les tâches à faire restent en haut.
 - Compteur « x à faire sur y » et progression « n % terminé » pour chaque projet.
 - Données conservées après rechargement ou fermeture de l'onglet (IndexedDB).
@@ -19,7 +20,7 @@ référence, réflexif, par homothétie, métamorphiques et différentiel.
 
 ```bash
 npm install            # installe aussi le hook Git pre-push (voir plus bas)
-npm run serve          # puis ouvrir http://localhost:8080
+npm run serve          # puis ouvrir l'adresse affichée : http://127.0.0.1:8081/
 ```
 
 IndexedDB et les modules JavaScript exigent une adresse `http://` : ouvrir `index.html` par
@@ -29,9 +30,9 @@ double-clic (`file://`) ne fonctionne pas.
 
 | Commande | Ce qu'elle lance | Durée |
 | --- | --- | --- |
-| `npm test` | 396 tests Vitest : TDD, classes, pairwise, oracles | ~1 s |
+| `npm test` | 408 tests Vitest : TDD, classes, pairwise, oracles | ~1 s |
 | `npm run test:couverture` | idem + couverture dans `coverage/` (100 % des lignes de `regles.js` et `service.js`) | ~2 s |
-| `npm run test:bdd` | 21 scénarios Gherkin dans Google Chrome | ~15 s |
+| `npm run test:bdd` | 27 scénarios Gherkin dans Google Chrome | ~15 s |
 | `npm run test:bdd:voir` | idem en voyant le navigateur travailler | ~20 s |
 | `npm run test:bdd -- --tags @persistance` | un sous-ensemble par tag | |
 | `npm run test:mutation` | test de mutation Stryker, rapport dans `reports/mutation/` | ~40 s |
@@ -45,9 +46,9 @@ Rapport BDD : `reports/cucumber/rapport.html` (capture d'écran jointe à chaque
 
 | Niveau | Fichiers | Outil | Doublures | Tests |
 | --- | --- | --- | --- | --- |
-| Unitaire (règles et service) | `web/test/service.*`, `classes-*`, `pairwise.*`, `oracle.*` | Vitest | fake `DepotMemoire`, horloge fixe, identifiants séquentiels | 348 |
-| Intégration de composants (dépôt + API IndexedDB) | `depot.contrat.test.js`, `oracle.differentiel.test.js` | Vitest + fake-indexeddb | IndexedDB conforme, en mémoire | 11 + 37 |
-| Système / acceptation (appli dans le navigateur) | `bdd/features/*.feature` | Cucumber-js + Playwright | aucune : vrai Chrome, vraie IndexedDB | 21 scénarios |
+| Unitaire (règles et service) | `web/test/service.*`, `classes-*`, `pairwise.*`, `oracle.*` | Vitest | fake `DepotMemoire`, horloge fixe, identifiants séquentiels | 355 |
+| Intégration de composants (dépôt + API IndexedDB) | `depot.contrat.test.js`, `oracle.differentiel.test.js` | Vitest + fake-indexeddb | IndexedDB conforme, en mémoire | 16 + 37 |
+| Système / acceptation (appli dans le navigateur) | `bdd/features/*.feature` | Cucumber-js + Playwright | aucune : vrai Chrome, vraie IndexedDB | 27 scénarios |
 
 Beaucoup de tests rapides en bas, peu de tests lents en haut. Une borne mal codée est
 détectée par Vitest en quelques millisecondes, sans ouvrir de navigateur.
@@ -95,6 +96,7 @@ git log --oneline --reverse
 | 5 | terminer et ordre d'affichage | `basculerTerminee`, tri | |
 | 6 | contrat du dépôt + persistance IndexedDB | `DepotIndexedDB` | |
 | 7 | statistiques (total, à faire, progression) | `statistiques` | |
+| 8 | suppression d'un projet et de ses tâches (service + contrat du dépôt) | `supprimerProjet`, une seule transaction IndexedDB | |
 
 Chaque commit `test(rouge)` a été vérifié en échec, chaque commit `feat(vert)` et `refactor`
 en succès. Le test de contrat joue la **même** batterie sur le fake et sur le vrai dépôt
@@ -162,7 +164,7 @@ Premier passage : **89,6 %** des mutants tués. Les survivants ont révélé de 
 - le champ en erreur et le message de plusieurs refus n'étaient jamais vérifiés ;
 - l'horloge et le générateur d'identifiants par défaut n'étaient jamais exécutés.
 
-Après ajout de ces tests (`service.mutants.test.js`) : **97,2 %** (140 tués sur 144).
+Après ajout de ces tests (`service.mutants.test.js`) : **97,2 %** (141 tués sur 145 depuis l'ajout de la suppression).
 Les 4 survivants ont été examinés :
 
 - deux sont **équivalents** : les contrôles du mois et du jour de `validerEcheance` sont
@@ -179,7 +181,7 @@ Les 4 survivants ont été examinés :
 - des scénarios Soit / Quand / Alors, c'est-à-dire le schéma AAA ;
 - deux **Plans du scénario** avec Exemples : bornes du titre (1, 120, 121) et progression (0, 33, 67, 100 %).
 
-Tags : `@projet`, `@ajout`, `@modification`, `@progression`, `@persistance`, `@negatif`, `@limite`.
+Tags : `@projet`, `@ajout`, `@modification`, `@suppression`, `@progression`, `@persistance`, `@negatif`, `@limite`.
 
 Cucumber-js relie chaque phrase type à une définition d'étape (`bdd/steps/todo.steps.js`)
 qui pilote un vrai Chrome avec Playwright. Choix pour des scénarios **reproductibles** :
@@ -249,6 +251,7 @@ des jobs `tdd` et `bdd` avant toute fusion.
 7. **Fuseau de l'échéance.** C'est une date calendaire sans heure. Une règle « en retard »
    dépendrait du fuseau du navigateur.
 8. **Arrondi de la progression.** On arrondit à l'entier le plus proche : 2 sur 3 donne 67 %.
-9. **Suppression.** Supprimer une tâche ou un projet n'est pas demandé. Que deviennent les tâches d'un projet supprimé ?
-10. **Portée des données.** IndexedDB est propre à un navigateur : rien n'est partagé entre
+9. **Suppression.** Supprimer un projet supprime aussi ses tâches, après une confirmation qui en annonce le nombre ; c'est définitif (pas de corbeille). Supprimer une tâche seule n'est pas prévu.
+10. **Longueur du nom de projet.** Aucune longueur maximale n'est fixée, contrairement au titre d'une tâche (120).
+11. **Portée des données.** IndexedDB est propre à un navigateur : rien n'est partagé entre
     appareils, et effacer les données du navigateur efface les tâches.

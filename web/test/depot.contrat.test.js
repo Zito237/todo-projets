@@ -49,6 +49,33 @@ for (const [nom, fabriquer] of Object.entries(implementations)) {
       expect(taches[0]).toMatchObject({ titre: 'Après', terminee: true });
     });
 
+    it('supprime un projet et toutes ses tâches, sans toucher aux autres projets', async () => {
+      await depot.sauverProjet(projet('p1', 'Maison'));
+      await depot.sauverProjet(projet('p2', 'Mémoire'));
+      await depot.sauverTache(tache('t1', 'p1', 'A'));
+      await depot.sauverTache(tache('t2', 'p1', 'B'));
+      await depot.sauverTache(tache('t3', 'p2', 'C'));
+
+      await depot.supprimerProjet('p1');
+
+      expect(await depot.trouverProjet('p1')).toBeNull();
+      expect(await depot.listerProjets()).toEqual([projet('p2', 'Mémoire')]);
+      expect(await depot.listerTaches('p1')).toEqual([]);
+      expect(await depot.trouverTache('t1')).toBeNull();
+      expect(await depot.trouverTache('t2')).toBeNull();
+      expect((await depot.listerTaches('p2')).map((t) => t.id)).toEqual(['t3']);
+    });
+
+    it('supprimer un projet inconnu ne change rien', async () => {
+      await depot.sauverProjet(projet('p1', 'Maison'));
+      await depot.sauverTache(tache('t1', 'p1', 'A'));
+
+      await depot.supprimerProjet('inconnu');
+
+      expect(await depot.listerProjets()).toEqual([projet('p1', 'Maison')]);
+      expect((await depot.listerTaches('p1')).map((t) => t.id)).toEqual(['t1']);
+    });
+
     it('renvoie des copies : modifier un objet lu ne modifie pas le stockage', async () => {
       await depot.sauverTache(tache('t1', 'p1', 'Original'));
       const lue = await depot.trouverTache('t1');
@@ -69,5 +96,18 @@ describe('persistance IndexedDB', () => {
     const second = await DepotIndexedDB.ouvrir(fabrique, 'todo-persist');
     expect(await second.listerProjets()).toEqual([projet('p1', 'Mémoire')]);
     expect((await second.listerTaches('p1')).map((t) => t.titre)).toEqual(['Chapitre 1']);
+  });
+
+  it('une suppression reste effective après réouverture de la base', async () => {
+    const fabrique = new IDBFactory();
+    const premier = await DepotIndexedDB.ouvrir(fabrique, 'todo-suppr');
+    await premier.sauverProjet(projet('p1', 'Mémoire'));
+    await premier.sauverTache(tache('t1', 'p1', 'Chapitre 1'));
+    await premier.supprimerProjet('p1');
+    premier.fermer();
+
+    const second = await DepotIndexedDB.ouvrir(fabrique, 'todo-suppr');
+    expect(await second.listerProjets()).toEqual([]);
+    expect(await second.trouverTache('t1')).toBeNull();
   });
 });

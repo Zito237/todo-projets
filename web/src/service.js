@@ -52,6 +52,12 @@ export class TodoService {
     return projets.sort((a, b) => comparerNoms(a.nom, b.nom));
   }
 
+  /** Supprime un projet et toutes ses tâches. La confirmation est l'affaire de l'interface. */
+  async supprimerProjet(id) {
+    await this.#exigerProjet(id);
+    await this.depot.supprimerProjet(id);
+  }
+
   async ajouterTache(projetId, { titre, echeance } = {}) {
     await this.#exigerProjet(projetId);
     const maintenant = this.#maintenant();

@@ -182,3 +182,41 @@ Quand("je ferme l'onglet et rouvre l'application", async function () {
   this.page = await this.contexte.newPage();
   await this.ouvrir();
 });
+
+// ---------- Supprimer un projet ----------
+
+// La suppression passe par une boîte de confirmation du navigateur (confirm).
+// Playwright la refuse par défaut : on y répond explicitement et on retient son texte.
+// On choisit le projet AVANT de mesurer le rendu, et on attend que la boîte ait été
+// traitée : sinon l'étape pourrait se terminer avant même qu'elle s'affiche.
+async function demanderSuppression(monde, nom, accepter) {
+  await monde.afficherProjet(nom);
+  const cliquerEtRepondre = async () => {
+    const boiteTraitee = new Promise((resoudre) => {
+      monde.page.once('dialog', async (dialogue) => {
+        monde.confirmationDemandee = dialogue.message();
+        await (accepter ? dialogue.accept() : dialogue.dismiss());
+        resoudre();
+      });
+    });
+    await monde.t('supprimer-projet').click();
+    await boiteTraitee;
+  };
+  if (accepter) {
+    await monde.agir(cliquerEtRepondre); // la suppression provoque un nouveau rendu
+  } else {
+    await cliquerEtRepondre(); // refus : l'application ne fait rien, aucun rendu à attendre
+  }
+}
+
+Quand('je supprime le projet {string} en confirmant', async function (nom) {
+  await demanderSuppression(this, nom, true);
+});
+
+Quand('je supprime le projet {string} en refusant la confirmation', async function (nom) {
+  await demanderSuppression(this, nom, false);
+});
+
+Alors('la confirmation demandée était {string}', async function (texte) {
+  expect(this.confirmationDemandee).toBe(texte);
+});

@@ -59,6 +59,24 @@ export class DepotIndexedDB {
     return this.#lire(PROJETS, (store) => store.getAll());
   }
 
+  /**
+   * Supprime le projet ET ses tâches dans UNE SEULE transaction : soit tout est
+   * supprimé, soit rien (pas de tâche orpheline si l'onglet se ferme au milieu).
+   * Sans effet si l'id est inconnu.
+   */
+  supprimerProjet(id) {
+    return new Promise((resoudre, rejeter) => {
+      const transaction = this.#base.transaction([PROJETS, TACHES], 'readwrite');
+      transaction.objectStore(PROJETS).delete(id);
+      const taches = transaction.objectStore(TACHES);
+      const cles = taches.index(INDEX_PAR_PROJET).getAllKeys(id);
+      cles.onsuccess = () => cles.result.forEach((cle) => taches.delete(cle));
+      transaction.oncomplete = () => resoudre();
+      transaction.onerror = () => rejeter(transaction.error);
+      transaction.onabort = () => rejeter(transaction.error);
+    });
+  }
+
   // ----- tâches -----
 
   sauverTache(tache) {

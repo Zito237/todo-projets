@@ -1,0 +1,20 @@
+#!/bin/sh
+# Hook Git « pre-push » : exécuté par `git push` AVANT d'envoyer quoi que ce soit.
+# S'il se termine en erreur, le push est ANNULÉ : du code rouge ne quitte pas le poste.
+# Installé automatiquement par `npm install` (script "prepare" -> core.hooksPath).
+# Contournement exceptionnel (déconseillé) : git push --no-verify
+# Le pipeline GitHub Actions rejoue de toute façon les tests côté serveur.
+
+echo "pre-push : tests unitaires et d'intégration (TDD, Vitest)..."
+npm test --silent || {
+  echo "pre-push : des tests TDD échouent, push annulé."
+  exit 1
+}
+
+echo "pre-push : scénarios BDD dans Chrome (Cucumber + Playwright)..."
+npm run test:bdd --silent -- --format summary || {
+  echo "pre-push : des scénarios BDD échouent, push annulé."
+  exit 1
+}
+
+echo "pre-push : tout est vert, envoi."

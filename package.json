@@ -8,11 +8,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:couverture": "vitest run --coverage",
+    "test:bdd": "cucumber-js",
+    "test:bdd:voir": "node outils/bdd-voir.js",
+    "test:tout": "vitest run && cucumber-js",
     "test:mutation": "stryker run",
     "serve": "node outils/serveur.js",
-    "test:bdd": "cucumber-js",
-    "test:bdd:voir": "HEADLESS=false cucumber-js",
-    "test:tout": "vitest run && cucumber-js"
+    "prepare": "node outils/installer-hooks.js"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^11.3.0",

@@ -381,15 +381,14 @@ protection demanderait un serveur.
 
 ## 6. Points à signaler honnêtement
 
-- **Les comptes, la suppression et la correction du serveur ne sont pas encore dans un commit.**
 - **Les comptes ne remplacent pas un serveur** (voir la limite en fin de section 5.10).
 - **Les projets créés avant l'ajout des comptes ne sont plus affichés.** Ils restent dans la
   base, sans propriétaire. Il faut recréer vos projets de démonstration après avoir créé un compte.
 
-- **Le dépôt n'est pas encore sur GitHub.** Aucun dépôt distant n'est configuré
-  (`git remote -v` est vide). Le pipeline est écrit mais n'a jamais tourné sur GitHub.
-  Pour l'activer : créer le dépôt, puis `git remote add origin <adresse>` et
-  `git push -u origin main`.
+- **Le pipeline GitHub tourne** sur https://github.com/Zito237/todo-projets/actions : tests
+  Vitest puis BDD à chaque push, mutation en plus chaque nuit ; toutes les exécutions depuis le
+  12 novembre ont réussi. GitHub signale seulement que les actions utilisées (`@v4`) visent
+  Node 20, devenu obsolète.
 - **Une ancienne version Java traîne dans `bdd/`.** Les premiers scénarios BDD étaient
   en Java (Cucumber + Selenium). Ils ont été remplacés par la version JavaScript et
   retirés de Git, mais `bdd/pom.xml`, `bdd/src/` et `bdd/target/` sont encore sur le

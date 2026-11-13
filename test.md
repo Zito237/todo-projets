@@ -172,19 +172,20 @@ Les 4 survivants de `regles.js` ont été examinés :
 | Mécanisme | Fichier | État |
 | --- | --- | --- |
 | Hook `pre-push` | `.githooks/pre-push` | installé par `npm install` ; lance `npm test` puis `npm run test:bdd` et annule le push en cas d'échec |
-| Intégration continue | `.github/workflows/ci.yml` | écrit, mais **jamais exécuté** : le dépôt n'a pas encore de dépôt distant GitHub |
+| Intégration continue | `.github/workflows/ci.yml` | **en service** sur https://github.com/Zito237/todo-projets/actions ; toutes les exécutions depuis le 12 novembre ont réussi |
 
-Le pipeline prévoit les tests Vitest avec couverture, puis les scénarios BDD, puis la mutation chaque nuit.
+À chaque push, GitHub lance les tests Vitest avec la couverture, puis, s'ils passent, les scénarios BDD dans Chrome. Chaque nuit (02 h 17 UTC), il ajoute le test de mutation. Les rapports (couverture, BDD, mutation) sont téléchargeables dans l'onglet Actions, rubrique « Artifacts ».
+
+Le push du 13 novembre en est un exemple : le hook a lancé les 1180 tests puis les 59 scénarios sur le poste, a laissé passer l'envoi, puis GitHub a rejoué les mêmes tests de son côté.
 
 ## 7. Ce qui n'est pas testé
 
-- **Le pipeline GitHub Actions** n'a jamais tourné, faute de dépôt distant.
+- **Le pipeline GitHub Actions utilise des versions anciennes de ses actions** (`checkout@v4`, `setup-node@v4`, `upload-artifact@v4`) : GitHub signale qu'elles visent Node 20, désormais obsolète. Les exécutions réussissent tout de même.
 - **Un seul navigateur :** les scénarios ne passent que dans Chrome.
 - **L'échec d'ouverture de la base** (lignes 31-32 du dépôt) n'est pas provoqué.
 - **Le nom de projet n'a pas de longueur maximale :** il n'y a donc pas de test de borne haute sur ce champ.
 - **Pas de test de charge** ni de test avec un grand nombre de comptes ou de tâches.
 - **Pas de serveur :** les comptes séparent les utilisateurs d'un même navigateur. Quelqu'un qui ouvre les outils de développement peut lire la base (mais pas les mots de passe).
-- **Le travail sur les comptes n'est pas encore enregistré dans Git :** le hook `pre-push` ne l'a donc jamais vérifié lors d'un push.
 
 Les autres lacunes sont listées dans le README.
 

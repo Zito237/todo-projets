@@ -3,11 +3,29 @@
 // scénarios BDD qui pilotent le vrai navigateur.
 import { TodoService, ErreurValidation } from './src/service.js';
 import { DepotIndexedDB } from './src/depot-indexeddb.js';
+import { ServiceComptes } from './src/comptes.js';
+import { creerHacheur } from './src/hachage.js';
 
 const $ = (selecteur) => document.querySelector(selecteur);
 
 const ui = {
   erreur: $('#erreur'),
+  session: $('#session'),
+  utilisateur: $('#utilisateur'),
+  deconnexion: $('#deconnexion'),
+  vueAuth: $('#vue-auth'),
+  vueApp: $('#vue-app'),
+  pageConnexion: $('#page-connexion'),
+  pageInscription: $('#page-inscription'),
+  formConnexion: $('#form-connexion'),
+  connexionIdentifiant: $('#connexion-identifiant'),
+  connexionMotDePasse: $('#connexion-mot-de-passe'),
+  formInscription: $('#form-inscription'),
+  inscriptionIdentifiant: $('#inscription-identifiant'),
+  inscriptionMotDePasse: $('#inscription-mot-de-passe'),
+  inscriptionConfirmation: $('#inscription-confirmation'),
+  allerInscription: $('#aller-inscription'),
+  allerConnexion: $('#aller-connexion'),
   listeProjets: $('#liste-projets'),
   formProjet: $('#form-projet'),
   nomProjet: $('#nom-projet'),
@@ -24,7 +42,11 @@ const ui = {
   aucuneTache: $('#aucune-tache'),
 };
 
-let service;
+let depot;
+let comptes;            // ServiceComptes : création de compte et connexion
+let compte = null;      // compte connecté, ou null
+let pageCompte = 'connexion'; // page affichée quand personne n'est connecté
+let service;            // TodoService du compte connecté
 let projetCourantId = null;
 let tacheEnEditionId = null;
 let nbRendus = 0;
@@ -64,15 +86,28 @@ async function agir(action) {
 // ----- rendu -----
 
 async function afficher() {
+  ui.vueAuth.hidden = Boolean(compte);
+  ui.vueApp.hidden = !compte;
+  ui.session.hidden = !compte;
+  if (compte) {
+    ui.utilisateur.textContent = compte.identifiant;
+    await afficherApplication();
+  } else {
+    ui.pageConnexion.hidden = pageCompte !== 'connexion';
+    ui.pageInscription.hidden = pageCompte !== 'inscription';
+  }
+  // Repère pour les tests BDD : incrémenté à la fin de chaque rendu. Le test attend
+  // qu'il change au lieu de faire une pause fixe (attente sur condition, séance 9).
+  document.body.dataset.rendu = String(++nbRendus);
+}
+
+async function afficherApplication() {
   const projets = await service.listerProjets();
   if (!projets.some((p) => p.id === projetCourantId)) {
     projetCourantId = projets[0]?.id ?? null;
   }
   await afficherProjets(projets);
   await afficherTaches(projets.find((p) => p.id === projetCourantId));
-  // Repère pour les tests BDD : incrémenté à la fin de chaque rendu. Le test attend
-  // qu'il change au lieu de faire une pause fixe (attente sur condition, séance 9).
-  document.body.dataset.rendu = String(++nbRendus);
 }
 
 async function afficherProjets(projets) {
@@ -208,6 +243,79 @@ function ligneEdition(tache, projets) {
   return li;
 }
 
+// ----- session -----
+
+// La session retient seulement l'id du compte connecté, pour rester connecté après un
+// rechargement. Le mot de passe n'est jamais gardé, ni en mémoire ni dans le navigateur.
+const CLE_SESSION = 'todo-session';
+
+function ouvrirSession(nouveauCompte) {
+  compte = nouveauCompte;
+  service = new TodoService(depot, { compteId: compte.id });
+  projetCourantId = null;
+  tacheEnEditionId = null;
+  localStorage.setItem(CLE_SESSION, compte.id);
+}
+
+function fermerSession() {
+  compte = null;
+  service = null;
+  projetCourantId = null;
+  tacheEnEditionId = null;
+  pageCompte = 'connexion';
+  localStorage.removeItem(CLE_SESSION);
+}
+
+function viderFormulairesDeCompte() {
+  ui.formConnexion.reset();
+  ui.formInscription.reset();
+}
+
+function allerA(page) {
+  pageCompte = page;
+  viderFormulairesDeCompte();
+  effacerErreur();
+  afficher();
+}
+
+ui.allerInscription.addEventListener('click', () => allerA('inscription'));
+ui.allerConnexion.addEventListener('click', () => allerA('connexion'));
+
+ui.formConnexion.addEventListener('submit', (evt) => {
+  evt.preventDefault();
+  agir(async () => {
+    try {
+      ouvrirSession(await comptes.connecter({
+        identifiant: ui.connexionIdentifiant.value,
+        motDePasse: ui.connexionMotDePasse.value,
+      }));
+      viderFormulairesDeCompte();
+    } finally {
+      ui.connexionMotDePasse.value = ''; // un mot de passe refusé ne reste pas affiché dans le champ
+    }
+  });
+});
+
+ui.formInscription.addEventListener('submit', (evt) => {
+  evt.preventDefault();
+  agir(async () => {
+    // Créer un compte connecte directement : pas de seconde saisie du mot de passe
+    ouvrirSession(await comptes.creerCompte({
+      identifiant: ui.inscriptionIdentifiant.value,
+      motDePasse: ui.inscriptionMotDePasse.value,
+      confirmation: ui.inscriptionConfirmation.value,
+    }));
+    viderFormulairesDeCompte();
+  });
+});
+
+ui.deconnexion.addEventListener('click', () => {
+  fermerSession();
+  viderFormulairesDeCompte();
+  effacerErreur();
+  afficher();
+});
+
 // ----- formulaires -----
 
 ui.formProjet.addEventListener('submit', (evt) => {
@@ -250,7 +358,16 @@ ui.formTache.addEventListener('submit', (evt) => {
 
 async function demarrer() {
   try {
-    service = new TodoService(await DepotIndexedDB.ouvrir(window.indexedDB));
+    depot = await DepotIndexedDB.ouvrir(window.indexedDB);
+    comptes = new ServiceComptes(depot, { hacheur: creerHacheur() });
+    // Reprise de session après un rechargement, si le compte existe toujours
+    const idSession = localStorage.getItem(CLE_SESSION);
+    const compteDeSession = idSession ? await comptes.trouverCompte(idSession) : null;
+    if (compteDeSession) {
+      ouvrirSession(compteDeSession);
+    } else {
+      localStorage.removeItem(CLE_SESSION);
+    }
     await afficher();
     document.body.dataset.pret = 'true'; // repère pour les tests BDD : l'appli a fini de charger
   } catch (e) {

@@ -5,8 +5,10 @@ Fonctionnalité: Gérer mes tâches par projet
   En tant qu'utilisateur de l'application To-Do
   Je veux ranger mes tâches dans des projets, les ajouter et les modifier sans les perdre en fermant la page
 
+  # Depuis l'ajout des comptes, tout se fait connecté : voir comptes.feature
   Contexte:
     Soit l'application To-Do est ouverte dans un navigateur neuf
+    Et je suis connecté avec un nouveau compte "awa"
 
   # ---------- Projets ----------
 

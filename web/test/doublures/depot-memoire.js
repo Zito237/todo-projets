@@ -4,6 +4,11 @@
 export class DepotMemoire {
   #projets = new Map();
   #taches = new Map();
+  #comptes = new Map();
+
+  async sauverCompte(compte) { this.#comptes.set(compte.id, { ...compte }); }
+  async trouverCompte(id) { const c = this.#comptes.get(id); return c ? { ...c } : null; }
+  async listerComptes() { return [...this.#comptes.values()].map((c) => ({ ...c })); }
 
   async sauverProjet(projet) { this.#projets.set(projet.id, { ...projet }); }
   async trouverProjet(id) { const p = this.#projets.get(id); return p ? { ...p } : null; }

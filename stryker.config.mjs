@@ -5,7 +5,7 @@
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   testRunner: 'vitest',
-  mutate: ['web/src/regles.js', 'web/src/service.js'],
+  mutate: ['web/src/regles.js', 'web/src/service.js', 'web/src/regles-compte.js', 'web/src/comptes.js'],
   reporters: ['clear-text', 'html', 'progress'],
   htmlReporter: { fileName: 'reports/mutation/index.html' },
   thresholds: { high: 90, low: 80, break: 80 }, // sous 80 % la commande échoue

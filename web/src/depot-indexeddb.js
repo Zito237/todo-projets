@@ -2,9 +2,11 @@
 // La fabrique IndexedDB est INJECTÉE (window.indexedDB dans l'application,
 // fake-indexeddb dans les tests Node) : c'est ce qui rend la classe testable.
 
-export const VERSION_BASE = 1;
+// Version 2 : ajout du magasin « comptes ». Les magasins de la version 1 sont conservés.
+export const VERSION_BASE = 2;
 const PROJETS = 'projets';
 const TACHES = 'taches';
+const COMPTES = 'comptes';
 const INDEX_PAR_PROJET = 'parProjet';
 
 /** Transforme une IDBRequest (API à callbacks) en Promise. */
@@ -20,6 +22,8 @@ export class DepotIndexedDB {
 
   constructor(base) {
     this.#base = base;
+    // Si une version plus récente de l'application s'ouvre ailleurs, on lui laisse la place
+    base.onversionchange = () => base.close();
   }
 
   static async ouvrir(fabrique = globalThis.indexedDB, nomBase = 'todo-projets') {
@@ -37,12 +41,36 @@ export class DepotIndexedDB {
         const taches = base.createObjectStore(TACHES, { keyPath: 'id' });
         taches.createIndex(INDEX_PAR_PROJET, 'projetId', { unique: false });
       }
+      if (!base.objectStoreNames.contains(COMPTES)) {
+        base.createObjectStore(COMPTES, { keyPath: 'id' });
+      }
     };
-    return new DepotIndexedDB(await enPromesse(requete));
+    const ouverture = enPromesse(requete);
+    const bloquee = new Promise((_, rejeter) => {
+      // Un autre onglet garde ouverte une ancienne version de la base : la mise à jour ne peut pas se faire
+      requete.onblocked = () => rejeter(new Error(
+        "une ancienne version de l'application est ouverte dans un autre onglet ; fermez-le puis rechargez la page",
+      ));
+    });
+    return new DepotIndexedDB(await Promise.race([ouverture, bloquee]));
   }
 
   fermer() {
     this.#base.close();
+  }
+
+  // ----- comptes -----
+
+  sauverCompte(compte) {
+    return this.#ecrire(COMPTES, compte);
+  }
+
+  async trouverCompte(id) {
+    return (await this.#lire(COMPTES, (store) => store.get(id))) ?? null;
+  }
+
+  listerComptes() {
+    return this.#lire(COMPTES, (store) => store.getAll());
   }
 
   // ----- projets -----

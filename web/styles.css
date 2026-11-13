@@ -65,3 +65,17 @@ button[type="submit"]:hover, .principal:hover { background: var(--accent-fonce);
 .erreur { background: var(--erreur-fond); color: var(--erreur); border: 1px solid #fecdca; border-radius: 6px; padding: 8px 12px; margin: 0 0 12px; }
 
 .visuellement-cache { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ----- comptes : en-tête de session, pages de connexion et de création de compte ----- */
+.entete { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.session { display: flex; align-items: center; gap: 12px; font-size: .9rem; }
+.bandeau { margin: 16px 28px 0; max-width: 1044px; }
+[hidden] { display: none !important; }
+.auth { display: flex; justify-content: center; padding: 32px 16px; }
+.carte-auth { background: var(--carte); border: 1px solid var(--bord); border-radius: 10px; padding: 24px; width: 100%; max-width: 400px; }
+.carte-auth h2 { font-size: 1.15rem; margin-bottom: 16px; }
+.form-auth { display: flex; flex-direction: column; gap: 6px; }
+.form-auth label { font-size: .9rem; font-weight: 600; margin-top: 8px; }
+.form-auth button { margin-top: 16px; }
+.aide { margin: 0; color: var(--discret); font-size: .8rem; }
+.lien { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; }

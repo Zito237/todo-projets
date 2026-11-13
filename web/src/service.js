@@ -9,9 +9,11 @@ export class TodoService {
    * @param depot     dépôt de persistance (DepotIndexedDB en production, fake en test)
    * @param horloge   () => Date, injectée pour des tests reproductibles
    * @param genererId () => string, injecté pour la même raison
+   * @param compteId  compte connecté : le service ne voit et ne modifie que SES projets
    */
-  constructor(depot, { horloge = () => new Date(), genererId = () => crypto.randomUUID() } = {}) {
+  constructor(depot, { horloge = () => new Date(), genererId = () => crypto.randomUUID(), compteId } = {}) {
     this.depot = depot;
+    this.compteId = compteId;
     this.horloge = horloge;
     this.genererId = genererId;
   }
@@ -22,7 +24,8 @@ export class TodoService {
 
   async #exigerProjet(id) {
     const projet = await this.depot.trouverProjet(id);
-    if (!projet) {
+    // Le projet d'un autre compte est traité comme inexistant : on ne révèle pas qu'il existe
+    if (!projet || projet.compteId !== this.compteId) {
       throw new ErreurValidation('Projet introuvable', 'projet');
     }
     return projet;
@@ -30,25 +33,31 @@ export class TodoService {
 
   async #exigerTache(id) {
     const tache = await this.depot.trouverTache(id);
-    if (!tache) {
+    const projet = tache && await this.depot.trouverProjet(tache.projetId);
+    if (!projet || projet.compteId !== this.compteId) {
       throw new ErreurValidation('Tâche introuvable', 'tache');
     }
     return tache;
   }
 
+  async #mesProjets() {
+    const projets = await this.depot.listerProjets();
+    return projets.filter((p) => p.compteId === this.compteId);
+  }
+
   async ajouterProjet(nomSaisi) {
     const nom = validerNomProjet(nomSaisi);
-    const existants = await this.depot.listerProjets();
+    const existants = await this.#mesProjets();
     if (existants.some((p) => cleDeNom(p.nom) === cleDeNom(nom))) {
       throw new ErreurValidation('Un projet porte déjà ce nom', 'nom');
     }
-    const projet = { id: this.genererId(), nom, creeLe: this.#maintenant() };
+    const projet = { id: this.genererId(), nom, creeLe: this.#maintenant(), compteId: this.compteId };
     await this.depot.sauverProjet(projet);
     return projet;
   }
 
   async listerProjets() {
-    const projets = await this.depot.listerProjets();
+    const projets = await this.#mesProjets();
     return projets.sort((a, b) => comparerNoms(a.nom, b.nom));
   }
 

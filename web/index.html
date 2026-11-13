@@ -9,11 +9,52 @@
 </head>
 <body>
   <header class="entete">
-    <h1>To-Do par projets</h1>
-    <p class="sous-titre">Vos données restent dans ce navigateur (IndexedDB).</p>
+    <div>
+      <h1>To-Do par projets</h1>
+      <p class="sous-titre">Vos données restent dans ce navigateur (IndexedDB).</p>
+    </div>
+    <div id="session" class="session" hidden>
+      <span>Connecté : <strong id="utilisateur" data-testid="utilisateur"></strong></span>
+      <button id="deconnexion" data-testid="deconnexion" type="button" class="secondaire">Se déconnecter</button>
+    </div>
   </header>
 
-  <div class="mise-en-page">
+  <p id="erreur" data-testid="erreur" class="erreur bandeau" role="alert" hidden></p>
+
+  <!-- Pages de compte : affichées tant que personne n'est connecté -->
+  <main id="vue-auth" class="auth" hidden>
+    <section id="page-connexion" data-testid="page-connexion" class="carte-auth" aria-labelledby="titre-connexion">
+      <h2 id="titre-connexion">Se connecter</h2>
+      <form id="form-connexion" class="form-auth" novalidate>
+        <label for="connexion-identifiant">Identifiant</label>
+        <input id="connexion-identifiant" data-testid="connexion-identifiant" autocomplete="username" autocapitalize="none" spellcheck="false">
+        <label for="connexion-mot-de-passe">Mot de passe</label>
+        <input id="connexion-mot-de-passe" data-testid="connexion-mot-de-passe" type="password" autocomplete="current-password">
+        <button type="submit" data-testid="se-connecter">Se connecter</button>
+      </form>
+      <p class="discret">Pas encore de compte ?
+        <button type="button" class="lien" id="aller-inscription" data-testid="aller-inscription">Créer un compte</button></p>
+    </section>
+
+    <section id="page-inscription" data-testid="page-inscription" class="carte-auth" aria-labelledby="titre-inscription" hidden>
+      <h2 id="titre-inscription">Créer un compte</h2>
+      <form id="form-inscription" class="form-auth" novalidate>
+        <label for="inscription-identifiant">Identifiant</label>
+        <input id="inscription-identifiant" data-testid="inscription-identifiant" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="aide-identifiant">
+        <p id="aide-identifiant" class="aide">3 à 30 caractères : lettres sans accent, chiffres, point, tiret, tiret bas.</p>
+        <label for="inscription-mot-de-passe">Mot de passe</label>
+        <input id="inscription-mot-de-passe" data-testid="inscription-mot-de-passe" type="password" autocomplete="new-password" aria-describedby="aide-mot-de-passe">
+        <p id="aide-mot-de-passe" class="aide">8 à 64 caractères, avec au moins une lettre et un chiffre.</p>
+        <label for="inscription-confirmation">Confirmer le mot de passe</label>
+        <input id="inscription-confirmation" data-testid="inscription-confirmation" type="password" autocomplete="new-password">
+        <button type="submit" data-testid="creer-compte">Créer mon compte</button>
+      </form>
+      <p class="discret">Déjà un compte ?
+        <button type="button" class="lien" id="aller-connexion" data-testid="aller-connexion">Se connecter</button></p>
+    </section>
+  </main>
+
+  <div id="vue-app" class="mise-en-page" hidden>
     <aside class="projets" aria-labelledby="titre-projets">
       <h2 id="titre-projets">Projets</h2>
       <ul id="liste-projets" data-testid="liste-projets"></ul>
@@ -25,8 +66,6 @@
     </aside>
 
     <main class="taches" aria-live="polite">
-      <p id="erreur" data-testid="erreur" class="erreur" role="alert" hidden></p>
-
       <section id="vue-vide" data-testid="vue-vide">
         <h2>Aucun projet</h2>
         <p>Créez un premier projet pour y ajouter des tâches.</p>

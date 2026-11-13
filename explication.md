@@ -2,11 +2,12 @@
 
 Ce document résume ce qui a été fait, ce qu'il faut savoir et ce qu'il faut dire au
 professeur. Tous les chiffres ci-dessous ont été obtenus en exécutant le projet le
-12/11/2026 sur ce poste (Windows 11, Node 24, Google Chrome).
+13/11/2026 sur ce poste (Windows 11, Node 24, Google Chrome).
 
 ## 1. Le projet en une minute
 
-C'est une application web de gestion de tâches rangées par projets. Les données sont
+C'est une application web de gestion de tâches rangées par projets, avec des comptes
+d'utilisateur : chacun crée son compte, se connecte et ne voit que ses données. Les données sont
 enregistrées dans l'**IndexedDB** du navigateur : il n'y a ni serveur applicatif ni base
 de données distante. Tout est écrit en JavaScript, sans framework.
 
@@ -17,6 +18,7 @@ d'équivalence, pairwise, oracles).
 
 Ce que fait l'application :
 
+- créer un compte, se connecter, se déconnecter (section 5.10) ;
 - créer des projets (nom obligatoire, unique sans tenir compte de la casse, liste triée) ;
 - ajouter une tâche dans un projet (titre obligatoire de 120 caractères au plus, échéance facultative) ;
 - modifier une tâche : titre, échéance, ou la déplacer dans un autre projet ;
@@ -60,10 +62,14 @@ On y trouve :
 
 | Élément | Contenu |
 | --- | --- |
-| Base `todo-projets`, version 1 | créée à la première ouverture de la page |
-| Magasin `projets` (clé `id`) | `id`, `nom`, `creeLe` |
+| Base `todo-projets`, version 2 | créée à la première ouverture de la page |
+| Magasin `comptes` (clé `id`) | `id`, `identifiant`, `sel`, `empreinte`, `creeLe` ; jamais le mot de passe |
+| Magasin `projets` (clé `id`) | `id`, `nom`, `creeLe`, `compteId` (le propriétaire) |
 | Magasin `taches` (clé `id`) | `id`, `projetId`, `titre`, `echeance`, `terminee`, `creeLe`, `modifieLe` |
 | Index `parProjet` sur `taches` | retrouve les tâches d'un projet par `projetId` |
+
+L'identifiant du compte connecté est gardé à part, dans **Stockage > Stockage local**,
+sous la clé `todo-session`.
 
 Si une donnée ajoutée n'apparaît pas, cliquer sur le bouton d'actualisation du panneau.
 Pour repartir de zéro : clic droit sur `todo-projets`, puis « Supprimer la base de données ».
@@ -83,10 +89,10 @@ double-clic.
 
 | Commande | Résultat obtenu | Durée |
 | --- | --- | --- |
-| `npm test` | **408 tests réussis sur 408** (16 fichiers) | 3 s |
-| `npm run test:couverture` | 100 % de `regles.js` et de `service.js`, 97 % de `depot-indexeddb.js` | 4 s |
-| `npm run test:bdd` | **27 scénarios réussis sur 27** (157 étapes) | 16 s |
-| `npm run test:mutation` | **97,24 %** : 141 mutants tués sur 145, 4 survivants | 56 s |
+| `npm test` | **1180 tests réussis sur 1180** (24 fichiers) | 5 à 9 s |
+| `npm run test:couverture` | 100 % de `regles.js`, `service.js`, `regles-compte.js`, `comptes.js`, `hachage.js` ; 98 % de `depot-indexeddb.js` | 6 s |
+| `npm run test:bdd` | **59 scénarios réussis sur 59** (333 étapes) | environ 1 min |
+| `npm run test:mutation` | **98,57 %** : 276 mutants détectés sur 280, 4 survivants | environ 2 min |
 
 Pour la démonstration, `npm run test:bdd:voir` rejoue les scénarios en montrant le
 navigateur travailler.
@@ -117,11 +123,15 @@ web/
   index.html, styles.css
   app.js                   interface : relie la page au service, aucune règle métier
   src/regles.js            règles pures : valider un titre, une échéance, un nom
-  src/service.js           TodoService : les opérations de l'application
+  src/service.js           TodoService : les opérations sur les projets et les tâches
+  src/regles-compte.js     règles pures : identifiant, mot de passe, confirmation
+  src/comptes.js           ServiceComptes : créer un compte, se connecter
+  src/hachage.js           empreinte du mot de passe (PBKDF2)
   src/depot-indexeddb.js   enregistrement dans IndexedDB
   test/                    tests Vitest
 bdd/
-  features/gestion_taches.feature   scénarios Gherkin en français
+  features/gestion_taches.feature   scénarios Gherkin : projets et tâches
+  features/comptes.feature          scénarios Gherkin : créer un compte, se connecter
   steps/, support/                  code qui exécute les scénarios dans Chrome
 outils/serveur.js          petit serveur web
 .githooks/pre-push         tests lancés avant chaque git push
@@ -147,17 +157,18 @@ L'historique Git montre le cycle. Commande à montrer : `git log --oneline --rev
 - Un commit `feat(vert)` ajoute le code minimal qui le fait passer.
 - Un commit `refactor` nettoie le code sans changer les tests.
 
-Il y a 8 cycles : nom de projet obligatoire, nom unique et liste triée, ajout de tâche,
+Il y a 11 cycles : nom de projet obligatoire, nom unique et liste triée, ajout de tâche,
 modification, terminer une tâche, persistance IndexedDB, statistiques, suppression d'un
-projet. Le dernier cycle (suppression) est fait mais pas encore enregistré dans Git.
+projet, création de compte, connexion, isolation entre comptes. Les quatre derniers sont
+faits mais pas encore enregistrés dans Git.
 
 ### 5.2 La pyramide des tests
 
 | Niveau | Outil | Ce qui est réel | Nombre |
 | --- | --- | --- | --- |
-| Unitaire | Vitest | rien : dépôt en mémoire, horloge fixe | 355 tests |
-| Intégration | Vitest + fake-indexeddb | l'API IndexedDB, simulée en mémoire | 53 tests |
-| Système | Cucumber-js + Playwright | Chrome et la vraie IndexedDB | 27 scénarios |
+| Unitaire | Vitest | rien : dépôt en mémoire, doublure du hacheur, horloge fixe | 952 tests |
+| Intégration | Vitest + fake-indexeddb | l'API IndexedDB, simulée en mémoire ; le vrai hachage PBKDF2 | 228 tests |
+| Système | Cucumber-js + Playwright | Chrome et la vraie IndexedDB | 59 scénarios |
 
 Beaucoup de tests rapides en bas, peu de tests lents en haut.
 
@@ -190,6 +201,8 @@ viennent d'une valeur seule ou de l'interaction de deux valeurs.
 | Ajouter une tâche | 768 | 96 |
 | Modifier une tâche | 432 | 36 |
 | Composer un projet | 144 | 16 |
+| Créer un compte | 2400 | 150 |
+| Se connecter | 216 | 72 |
 
 Le générateur est écrit dans le projet (`web/test/pairwise/pairwise.js`). C'est
 l'équivalent JavaScript de jenny et de `@PairwiseSource` du devoir Java. Il est lui-même
@@ -224,7 +237,8 @@ passent encore, les tests ont un trou.
 - Premier passage : 89,6 %. Les survivants ont montré qu'il manquait trois classes
   d'échéance (date suivie d'une heure, texte avant la date, année 0050) et que certains
   messages d'erreur n'étaient jamais vérifiés.
-- Après ajout des tests manquants (`service.mutants.test.js`) : **97,24 %**.
+- Après ajout des tests manquants (`service.mutants.test.js`) : 97,2 %.
+- Avec le code des comptes, lui-même à 100 % : **98,57 %** au total.
 - Les 4 survivants ont été analysés : 3 sont des mutants équivalents (le code modifié se
   comporte exactement comme l'original) et 1 révèle une lacune de la spécification
   (l'ordre de « Ecole » et « école » dans la liste).
@@ -237,8 +251,9 @@ vérifié.
 `bdd/features/gestion_taches.feature` décrit le comportement en français avec Gherkin
 (Soit / Quand / Alors). Cucumber-js lit ces phrases et Playwright pilote un vrai Chrome.
 
-- 22 scénarios écrits, dont 2 « Plans du scénario » avec tableau d'exemples, soit 27 exécutions.
-- Tags : `@projet`, `@ajout`, `@modification`, `@suppression`, `@progression`, `@persistance`, `@negatif`, `@limite`.
+- Deux fichiers : `gestion_taches.feature` (27 exécutions) et `comptes.feature` (32 exécutions), soit 59.
+- 38 scénarios écrits, dont 6 « Plans du scénario » avec tableau d'exemples.
+- Tags : `@projet`, `@ajout`, `@modification`, `@suppression`, `@progression`, `@persistance`, `@negatif`, `@limite`, `@compte`, `@inscription`, `@connexion`, `@isolation`, `@securite`.
 - Chaque scénario part d'un profil de navigateur neuf, donc d'une IndexedDB vide : aucun
   scénario ne dépend d'un autre.
 - Aucune pause fixe : le test attend que la page signale la fin de son affichage.
@@ -281,9 +296,95 @@ Elle a été faite en TDD : 12 tests écrits d'abord et vus en échec, puis le c
 vide ; un nom de 500 caractères est accepté. Seul le titre d'une tâche est limité
 (120 caractères). C'est une lacune de spécification à signaler.
 
+### 5.10 Comptes : pages « Créer un compte » et « Se connecter » (ajoutées le 13/11/2026)
+
+N'importe qui peut créer un compte, se connecter, puis faire tout ce qui existait déjà
+(projets, tâches, modification, suppression). Chaque utilisateur ne voit que ses données.
+
+**Les règles**
+
+| Champ | Règle |
+| --- | --- |
+| Identifiant | 3 à 30 caractères : lettres sans accent, chiffres, point, tiret, tiret bas. Unique sans tenir compte de la casse. Espaces autour retirés. |
+| Mot de passe | 8 à 64 caractères, au moins une lettre et un chiffre. Jamais modifié : un espace compte, la casse compte. |
+| Confirmation | Doit être identique au mot de passe. |
+| Connexion | L'identifiant est reconnu sans tenir compte de la casse. Un identifiant inconnu et un mauvais mot de passe donnent le même message : « Identifiant ou mot de passe incorrect ». |
+| Session | On reste connecté après un rechargement, jusqu'à « Se déconnecter ». |
+
+L'énoncé ne donnait pas ces règles : ce sont mes choix, à faire valider.
+
+**Comment c'est construit**
+
+- `web/src/regles-compte.js` : les règles pures (identifiant, mot de passe, confirmation).
+- `web/src/comptes.js` : `ServiceComptes`, avec `creerCompte` et `connecter`.
+- `web/src/hachage.js` : le mot de passe n'est **jamais enregistré**. On enregistre une
+  empreinte calculée avec PBKDF2 (100 000 tours) et un sel aléatoire propre à chaque compte.
+- `TodoService` reçoit le compte connecté (`compteId`). Le projet d'un autre compte est
+  traité comme s'il n'existait pas.
+- La base IndexedDB passe en version 2 avec un magasin `comptes`.
+
+Le hacheur est **injecté**, comme l'horloge : le vrai est lent exprès (c'est ce qui protège
+les mots de passe), donc les tests unitaires utilisent une doublure immédiate. Un test de
+contrat vérifie que la doublure et le vrai hacheur respectent les mêmes propriétés.
+
+**Les tests appliqués aux deux pages, technique par technique**
+
+| Technique | Ce qui a été fait | Nombre |
+| --- | --- | --- |
+| TDD | tests écrits d'abord et vus en échec, puis le code | 19 (création) + 10 (connexion) + 9 (isolation) |
+| Classes d'équivalence | 15 classes d'identifiant, 10 de mot de passe, 4 de confirmation, 9 et 8 pour la connexion, une classe à la fois | 73 |
+| Valeurs limites | identifiant 2, 3, 30, 31 ; mot de passe 7, 8, 64, 65 | dans les classes et en BDD |
+| Pairwise, création de compte | 15 × 10 × 4 × 4 = 2400 combinaisons | 150 cas |
+| Pairwise, connexion | 9 × 8 × 3 = 216 combinaisons | 72 cas |
+| Oracle de référence | `oracles/reference-compte.js` prédit succès ou champ en erreur ; un refus n'enregistre rien | sur les 222 cas |
+| Oracle réflexif | se connecter deux fois donne le même résultat ; `valider(valider(x)) = valider(x)` | 78 |
+| Oracles métamorphiques | 5 relations, voir ci-dessous | 186 |
+| Oracle différentiel | mêmes opérations sur le dépôt en mémoire et sur IndexedDB | 151 |
+| Oracle de référence externe | l'empreinte de « password » / « salt » est la valeur publiée de PBKDF2 | 1 |
+| Mutation | `regles-compte.js` et `comptes.js` : 100 % | 120 mutants |
+| BDD | `bdd/features/comptes.feature`, dans un vrai Chrome | 32 scénarios |
+
+Les cinq relations métamorphiques :
+
+1. changer la casse de l'identifiant ou l'entourer d'espaces ne change pas le résultat ;
+2. l'ordre de création des comptes ne change pas le résultat d'une connexion ;
+3. créer un compte de plus ne change rien pour les autres ;
+4. un identifiant inconnu et un mauvais mot de passe donnent exactement le même refus ;
+5. le compte créé ne dépend pas du mot de passe choisi.
+
+**L'oracle par homothétie ne s'applique pas ici** : un identifiant ou un mot de passe ne
+se multiplie pas par k. Il vaut mieux le dire que d'inventer un test qui ne vérifie rien.
+
+**Trois choses à raconter au professeur**
+
+1. **Le pairwise a trouvé une erreur dans l'oracle, pas dans le code.** Sur 1177 tests, un
+   seul a échoué au premier lancement : « identifiant d'un autre compte » avec « mot de
+   passe de cet autre compte ». Mon oracle de référence prédisait un refus. Or c'est une
+   connexion valide, au compte de l'autre. Je n'aurais jamais écrit ce cas à la main. J'ai
+   corrigé l'oracle. Leçon : un oracle est aussi du code, il peut être faux.
+2. **La mutation a retrouvé le même trou qu'avant.** Premier passage : 2 mutants jamais
+   exécutés, l'horloge et le générateur d'identifiants par défaut de `ServiceComptes`.
+   C'est exactement le trou déjà trouvé sur `TodoService`. Un test a été ajouté.
+3. **La leçon des ancres a servi.** Sur l'échéance, la mutation avait montré qu'on pouvait
+   retirer `^` ou `$` de l'expression régulière sans être vu. Pour l'identifiant, j'ai donc
+   prévu dès le départ les classes « caractère interdit au début » et « à la fin » :
+   aucun mutant n'a survécu.
+
+Les scénarios BDD ont aussi été vérifiés en cassant l'application : sans filtre par compte
+et sans effacement du mot de passe refusé, 6 scénarios échouent.
+
+**Limite à dire clairement.** Il n'y a pas de serveur : les comptes sont dans le navigateur.
+Ils séparent les données de plusieurs personnes sur un même poste, mais quelqu'un qui ouvre
+les outils de développement (F12) peut lire les projets de tout le monde et les empreintes.
+Les mots de passe, eux, ne sont lisibles nulle part : un scénario BDD le vérifie. Une vraie
+protection demanderait un serveur.
+
 ## 6. Points à signaler honnêtement
 
-- **La suppression et la correction du serveur ne sont pas encore dans un commit.**
+- **Les comptes, la suppression et la correction du serveur ne sont pas encore dans un commit.**
+- **Les comptes ne remplacent pas un serveur** (voir la limite en fin de section 5.10).
+- **Les projets créés avant l'ajout des comptes ne sont plus affichés.** Ils restent dans la
+  base, sans propriétaire. Il faut recréer vos projets de démonstration après avoir créé un compte.
 
 - **Le dépôt n'est pas encore sur GitHub.** Aucun dépôt distant n'est configuré
   (`git remote -v` est vide). Le pipeline est écrit mais n'a jamais tourné sur GitHub.
@@ -297,7 +398,7 @@ vide ; un nom de 500 caractères est accepté. Seul le titre d'une tâche est li
   d'installation.
 - **La correction du serveur** (section 3) reste à enregistrer dans un commit.
 - **L'interface (`app.js`) n'a pas de test unitaire.** Elle ne contient aucune règle
-  métier et elle est couverte par les 27 scénarios BDD.
+  métier et elle est couverte par les 59 scénarios BDD.
 
 ## 7. Lacunes de spécification trouvées en écrivant les tests
 
@@ -315,17 +416,22 @@ résultat du projet à présenter, pas un défaut.
 9. Supprimer un projet supprime aussi ses tâches ; c'est définitif. Supprimer une tâche seule n'est pas prévu.
 10. Le nom d'un projet n'a pas de longueur maximale, alors que le titre d'une tâche est limité à 120.
 11. Les données sont propres à un navigateur : rien n'est partagé entre appareils.
+12. Les règles de l'identifiant et du mot de passe n'étaient pas données : elles ont été choisies.
+13. L'ordre des messages de refus d'un compte a dû être choisi.
+14. Mot de passe oublié, changement de mot de passe, suppression de compte : non prévus.
+15. La session n'expire jamais et rien ne bloque après plusieurs échecs de connexion.
+16. Les projets créés avant l'ajout des comptes n'appartiennent à personne.
 
 ## 8. Déroulé conseillé pour la démonstration (environ 10 minutes)
 
-1. `npm run serve`, puis http://127.0.0.1:8081/ : créer deux projets, ajouter deux tâches, en cocher une, en déplacer une, puis supprimer un projet.
-2. F12 > Application > IndexedDB > `todo-projets` : montrer les deux magasins, puis recharger la page pour montrer que les données restent.
+1. `npm run serve`, puis http://127.0.0.1:8081/ : créer un compte, créer deux projets, ajouter deux tâches, en cocher une, en déplacer une, supprimer un projet. Se déconnecter, créer un second compte : il ne voit aucun projet.
+2. F12 > Application > IndexedDB > `todo-projets` : montrer les trois magasins, et dans `comptes` l'empreinte à la place du mot de passe, puis recharger la page pour montrer que les données restent.
 3. `git log --oneline --reverse` : montrer les commits rouge, vert, refactor.
-4. `npm test` : 408 tests en 3 secondes.
+4. `npm test` : 1180 tests en quelques secondes.
 5. Ouvrir `web/test/pairwise/facteurs.js` : les classes d'équivalence. Expliquer 768 combinaisons ramenées à 96 cas.
 6. Ouvrir `web/test/oracle.homothetie.test.js` : expliquer le cas où l'homothétie ne détecte rien.
 7. `npm run test:bdd:voir` : le navigateur exécute les scénarios. Montrer le fichier `.feature` à côté.
-8. Ouvrir `reports/mutation/index.html` : 97,24 %, expliquer les 4 survivants.
+8. Ouvrir `reports/mutation/index.html` : 98,57 %, expliquer les 4 survivants.
 9. Montrer `.githooks/pre-push` et `.github/workflows/ci.yml`.
 10. Terminer par les lacunes de spécification.
 
@@ -359,3 +465,24 @@ lents vont dans le pipeline de nuit.
 **Peut-on contourner le hook pre-push ?**
 Oui, avec `git push --no-verify`. C'est pour cela que le pipeline GitHub rejoue les tests
 côté serveur.
+
+**Où est enregistré le mot de passe ?**
+Nulle part. On enregistre une empreinte PBKDF2 avec un sel propre à chaque compte. À la
+connexion, on recalcule l'empreinte du mot de passe saisi et on compare.
+
+**Pourquoi une doublure pour le hacheur ?**
+Le vrai fait 100 000 tours pour être lent : c'est ce qui protège les mots de passe. Avec
+lui, les 1180 tests dureraient plusieurs minutes. La doublure répond tout de suite, et un
+test de contrat vérifie qu'elle a les mêmes propriétés que le vrai.
+
+**Pourquoi le même message pour un identifiant inconnu et un mauvais mot de passe ?**
+Pour ne pas révéler quels identifiants existent. C'est vérifié par une relation
+métamorphique et par un scénario BDD.
+
+**Ces comptes sont-ils sûrs ?**
+Les mots de passe, oui : ils ne sont lisibles nulle part. Les données, non : sans serveur,
+quelqu'un qui ouvre les outils du navigateur lit toute la base. Les comptes séparent les
+utilisateurs d'un même poste, ils ne remplacent pas un serveur.
+
+**Pourquoi pas d'oracle par homothétie sur les comptes ?**
+Parce qu'aucune grandeur ne s'y multiplie. Un oracle ne vaut que s'il peut échouer.

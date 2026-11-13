@@ -43,7 +43,8 @@ double-clic (`file://`) ne fonctionne pas.
 | `npm run test:mutation` | test de mutation Stryker, rapport dans `reports/mutation/` | ~2 min |
 | `npm run test:tout` | Vitest puis Cucumber | ~1 min |
 
-Prérequis : Node.js 20 ou plus et Google Chrome. Sans Chrome :
+Prérequis : Node.js 22.18 ou plus (branche 22), ou 24.11 ou plus, et Google Chrome.
+Sans Chrome :
 `npx playwright install chromium` puis `PW_CHANNEL=chromium npm run test:bdd`.
 Rapport BDD : `reports/cucumber/rapport.html` (capture d'écran jointe à chaque échec).
 

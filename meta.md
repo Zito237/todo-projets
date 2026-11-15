@@ -250,3 +250,4 @@ Le projet utilise donc plusieurs sortes d'oracles. Les uns prédisent le résult
 | Différentiel | le fake et IndexedDB donnent-ils le même résultat ? | `oracle.differentiel`, `oracle.comptes` |
 
 **Comment pairwise et oracles se combinent.** Le pairwise répond à la question « quelles entrées tester ? ». Les oracles répondent à la question « comment savoir si la réponse est juste ? ». Le pairwise fournit des centaines de cas variés, et chaque oracle les juge sous un angle différent. Un défaut qui échappe à l'un, comme la progression inversée invisible pour l'homothétie, est attrapé par un autre, ici l'oracle de référence.
+ok
